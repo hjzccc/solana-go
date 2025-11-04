@@ -359,13 +359,14 @@ func NewTransaction(instructions []Instruction, recentBlockHash Hash, opts ...Tr
 	message := Message{
 		RecentBlockhash: recentBlockHash,
 	}
-	lookupsMap := make(map[PublicKey]struct { // extended MessageAddressTableLookup
-		AccountKey      PublicKey // The account key of the address table.
+	type extendedLookup struct {
+		AccountKey      PublicKey
 		WritableIndexes []uint8
 		Writable        []PublicKey
 		ReadonlyIndexes []uint8
 		Readonly        []PublicKey
-	})
+	}
+	lookupsMap := make(map[PublicKey]*extendedLookup)
 	for idx, acc := range allKeys {
 
 		if debugNewTransaction {
@@ -380,6 +381,10 @@ func NewTransaction(instructions []Instruction, recentBlockHash Hash, opts ...Tr
 		// skip fee payer
 		if isPresentedInTables && idx != 0 && !acc.IsSigner && !isInvoked {
 			lookup := lookupsMap[addressLookupKeyEntry.addressTable]
+			if lookup == nil {
+				lookup = &extendedLookup{AccountKey: addressLookupKeyEntry.addressTable}
+				lookupsMap[addressLookupKeyEntry.addressTable] = lookup // exactly one insert per table
+			}
 			if acc.IsWritable {
 				lookup.WritableIndexes = append(lookup.WritableIndexes, addressLookupKeyEntry.index)
 				lookup.Writable = append(lookup.Writable, acc.PublicKey)
@@ -387,8 +392,6 @@ func NewTransaction(instructions []Instruction, recentBlockHash Hash, opts ...Tr
 				lookup.ReadonlyIndexes = append(lookup.ReadonlyIndexes, addressLookupKeyEntry.index)
 				lookup.Readonly = append(lookup.Readonly, acc.PublicKey)
 			}
-
-			lookupsMap[addressLookupKeyEntry.addressTable] = lookup
 			continue // prevent changing message.Header properties
 		}
 
