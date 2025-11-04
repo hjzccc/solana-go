@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"runtime/pprof"
 	"sort"
 
 	"github.com/davecgh/go-spew/spew"
@@ -367,7 +366,6 @@ func NewTransaction(instructions []Instruction, recentBlockHash Hash, opts ...Tr
 		ReadonlyIndexes []uint8
 		Readonly        []PublicKey
 	}
-	pprof.Do()
 	lookupsMap := make(map[PublicKey]*extendedLookup)
 	for idx, acc := range allKeys {
 
