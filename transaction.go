@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"runtime/pprof"
 	"sort"
 
 	"github.com/davecgh/go-spew/spew"
@@ -258,7 +259,7 @@ func NewTransaction(instructions []Instruction, recentBlockHash Hash, opts ...Tr
 		}
 	}
 
-	addressLookupKeysMap := make(map[PublicKey]addressTablePubkeyWithIndex) // all accounts from tables as map
+	addressLookupKeysMap := make(map[PublicKey]addressTablePubkeyWithIndex, len(options.addressTables)*256)
 	for addressTablePubKey, addressTable := range options.addressTables {
 		if len(addressTable) > 256 {
 			return nil, fmt.Errorf("max lookup table index exceeded for %s table", addressTablePubKey)
@@ -302,7 +303,7 @@ func NewTransaction(instructions []Instruction, recentBlockHash Hash, opts ...Tr
 		return accounts[i].less(accounts[j])
 	})
 
-	uniqAccountsMap := map[PublicKey]uint64{}
+	uniqAccountsMap := make(map[PublicKey]uint64, len(accounts))
 	uniqAccounts := []*AccountMeta{}
 	for _, acc := range accounts {
 		if index, found := uniqAccountsMap[acc.PublicKey]; found {
@@ -366,6 +367,7 @@ func NewTransaction(instructions []Instruction, recentBlockHash Hash, opts ...Tr
 		ReadonlyIndexes []uint8
 		Readonly        []PublicKey
 	}
+	pprof.Do()
 	lookupsMap := make(map[PublicKey]*extendedLookup)
 	for idx, acc := range allKeys {
 
